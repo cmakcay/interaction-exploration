@@ -13,10 +13,20 @@ from torchvision.utils import make_grid
 import torchvision.transforms as transforms
 import torch.nn.functional as F
 import csv
+import argparse
 
 from rl.common.env_utils import construct_envs, get_env_class
 from rl.config import get_config
 from interaction_exploration.utils import util
+
+
+parser = argparse.ArgumentParser(description='RL')
+parser.add_argument('--env-name', default='ThorInteractionCount-v0')
+parser.add_argument('--markers', action='store_true')
+parser.add_argument('--x_display', default='0.0')
+parser.add_argument('--save_path', default='/home/iremkaftan/Desktop/interaction-exploration/datasets')
+args = parser.parse_args()
+
 
 def get_term_character():
     fd = sys.stdin.fileno()
@@ -59,7 +69,7 @@ class KBController(object):
         
         self.act_to_idx = collections.defaultdict(lambda: -1)
         self.act_to_idx.update({act:idx for idx, act in enumerate(self.envs.call_at(0, 'get_actions'))})
-
+        self.time = 0
 
         sz = 300
         N = 5
@@ -113,15 +123,15 @@ class KBController(object):
         if (color_frame is not None):
             print("there is color frame available")
             im = Image.fromarray(color_frame)
-            im.save("color_frame.png")
+            im.save(f"{args.save_path}/{self.time}color_frame.png")
         if (depth_frame is not None):
             print("there is depth frame available")
             im = Image.fromarray(depth_frame)
-            im.save("depth_frame.tiff")
+            im.save(f"{args.save_path}/{self.time}depth_frame.tiff")
         if (segmentation_frame is not None):
             print("there is segmentation frame available")
             im = Image.fromarray(segmentation_frame)
-            im.save("segmentation_frame.png")
+            im.save(f"{args.save_path}/{self.time}segmentation_frame.png")
         if (color_to_id is not None):
             list_of_dicsts = []
             for key, value in color_to_id.items():
@@ -205,19 +215,14 @@ class KBController(object):
 
             display = os.environ['DISPLAY']
             os.environ['DISPLAY'] = os.environ['LDISPLAY']
+            if action != 'reset':
+                self.time += 1
+            else:
+                self.time = 0
             self.render()
             os.environ['DISPLAY'] = display
 
 if __name__=='__main__':
-
-    import argparse
-    parser = argparse.ArgumentParser(description='RL')
-    parser.add_argument('--env-name', default='ThorInteractionCount-v0')
-    parser.add_argument('--markers', action='store_true')
-    parser.add_argument('--x_display', default='0.0')
-    args = parser.parse_args()
-
-
     os.environ['LDISPLAY'] = os.environ['DISPLAY']
 
     config = get_config()
