@@ -7,7 +7,7 @@ import os
 import collections
 import torch
 import numpy as np
-from PIL import ImageDraw
+from PIL import ImageDraw, Image
 from torchvision.utils import make_grid
 import torchvision.transforms as transforms
 import torch.nn.functional as F
@@ -102,6 +102,41 @@ class KBController(object):
     def render(self):
 
         event = self.envs.call_at(0, 'last_event')
+        
+        # Mert collect dataset
+        color_frame = event.frame 
+        depth_frame = event.depth_frame
+        segmentation_frame = event.instance_segmentation_frame
+        color_to_id = event.color_to_object_id
+        if (color_frame is not None):
+            print("there is color frame available")
+            im = Image.fromarray(color_frame)
+            im.save("color_frame.png")
+        if (depth_frame is not None):
+            print("there is depth frame available")
+            im = Image.fromarray(depth_frame)
+            im.save("depth_frame.tiff")
+        if (segmentation_frame is not None):
+            print("there is segmentation frame available")
+            im = Image.fromarray(segmentation_frame)
+            im.save("segmentation_frame.png")
+        if (color_to_id is not None):
+            #TODO
+            pass
+            # print("there is color_to_id info available")
+            # seg_height = segmentation_frame.shape[0]
+            # seg_width = segmentation_frame.shape[1]
+            # id_frame = np.zeros_like(segmentation_frame)
+            # for j_idx in range(seg_width):
+            #   for i_idx in range(seg_height):
+            #     cur_rgb = [segmentation_frame[i_idx,j_idx, :]]  
+            #     cur_rgb_tuple = [tuple(e) for e in cur_rgb]
+            #     print(cur_rgb_tuple[0])
+            #     # id_frame[i_idx,j_idx, :] = color_to_id[cur_rgb_tuple[0]]
+            #     print(color_to_id)             
+
+        # Mert collect dataset
+
         frame = torch.from_numpy(np.array(event.frame)).float().permute(2, 0, 1)/255
         frame = F.interpolate(frame.unsqueeze(0), 300, mode='bilinear', align_corners=True)[0]
         frame = add_rectangle(frame, self.center_box)

@@ -49,8 +49,8 @@ class ThorEnv(gym.Env):
     def init_params(self):
         params = {
             'gridSize': 0.25,
-            'renderObjectImage': False,
-            'renderDepthImage': False,
+            'renderObjectImage': True,
+            'renderDepthImage': True,
         }
         return params
 
