@@ -5,12 +5,14 @@ import termios
 import tty
 import os
 import collections
+from turtle import color
 import torch
 import numpy as np
 from PIL import ImageDraw, Image
 from torchvision.utils import make_grid
 import torchvision.transforms as transforms
 import torch.nn.functional as F
+import csv
 
 from rl.common.env_utils import construct_envs, get_env_class
 from rl.config import get_config
@@ -121,8 +123,9 @@ class KBController(object):
             im = Image.fromarray(segmentation_frame)
             im.save("segmentation_frame.png")
         if (color_to_id is not None):
-            #TODO
-            pass
+            list_of_dicsts = []
+            for key, value in color_to_id.items():
+                list_of_dicsts.append({"color": key, "id": value})
             # print("there is color_to_id info available")
             # seg_height = segmentation_frame.shape[0]
             # seg_width = segmentation_frame.shape[1]
@@ -134,7 +137,10 @@ class KBController(object):
             #     print(cur_rgb_tuple[0])
             #     # id_frame[i_idx,j_idx, :] = color_to_id[cur_rgb_tuple[0]]
             #     print(color_to_id)             
-
+            with open('colors_ids.csv', 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=["color", "id"])
+                writer.writeheader()
+                writer.writerows(list_of_dicsts)
         # Mert collect dataset
 
         frame = torch.from_numpy(np.array(event.frame)).float().permute(2, 0, 1)/255
