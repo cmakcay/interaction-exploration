@@ -24,7 +24,7 @@ parser = argparse.ArgumentParser(description='RL')
 parser.add_argument('--env-name', default='ThorInteractionCount-v0')
 parser.add_argument('--markers', action='store_true')
 parser.add_argument('--x_display', default='0.0')
-parser.add_argument('--save_path', default='/home/iremkaftan/Desktop/interaction-exploration/datasets')
+parser.add_argument('--save_path', default='/home/iremkaftan/Desktop/kb_agent_dataset')
 args = parser.parse_args()
 
 
