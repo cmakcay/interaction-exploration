@@ -119,17 +119,20 @@ class KBController(object):
         color_frame = event.frame 
         depth_frame = event.depth_frame
         segmentation_frame = event.instance_segmentation_frame
+        # print("fov: " + str(event.metadata["fov"])) 90deg
+        # print("screen width: " + str(event.metadata["screenWidth"])) 300px
+        # print("screen height: " + str(event.metadata["screenHeight"])) 300px
         color_to_id = event.color_to_object_id
         if (color_frame is not None):
-            print("there is color frame available")
+            # print("there is color frame available")
             im = Image.fromarray(color_frame)
             im.save(f"{args.save_path}/{self.time}color_frame.png")
         if (depth_frame is not None):
-            print("there is depth frame available")
+            # print("there is depth frame available")
             im = Image.fromarray(depth_frame)
             im.save(f"{args.save_path}/{self.time}depth_frame.tiff")
         if (segmentation_frame is not None):
-            print("there is segmentation frame available")
+            # print("there is segmentation frame available")
             im = Image.fromarray(segmentation_frame)
             im.save(f"{args.save_path}/{self.time}segmentation_frame.png")
         if (color_to_id is not None):
