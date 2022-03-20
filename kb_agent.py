@@ -14,6 +14,7 @@ import torchvision.transforms as transforms
 import torch.nn.functional as F
 import csv
 import argparse
+from scipy.spatial.transform import Rotation as R
 
 from rl.common.env_utils import construct_envs, get_env_class
 from rl.config import get_config
@@ -25,6 +26,7 @@ parser.add_argument('--env-name', default='ThorInteractionCount-v0')
 parser.add_argument('--markers', action='store_true')
 parser.add_argument('--x_display', default='0.0')
 parser.add_argument('--save_path', default='/home/iremkaftan/Desktop/kb_agent_dataset')
+parser.add_argument('--csv_path', default='/home/iremkaftan/Desktop/kb_agent_dataset/groundtruth_labels.csv')
 args = parser.parse_args()
 
 
@@ -82,7 +84,21 @@ class KBController(object):
         self.interactions = ['take', 'put', 'open', 'close', 'toggle-on', 'toggle-off', 'slice']
         self.act_to_channel = {act: idx for idx, act in enumerate(self.interactions)}
 
-
+        self.timestamp = open(f"{args.save_path}/timestamps.csv", 'w')
+        self.writer = csv.writer(self.timestamp)
+        self.writer.writerow(['ImageID', 'TimeStamp'])
+        
+        # Mert load csv
+        self.rgbs_to_id = {}
+        with open(args.csv_path) as csvfile:
+            reader = csv.DictReader(csvfile)
+            # header = next(reader)
+            for row in reader:
+                rgb_curr  = (int(row["R"]), int(row["G"]), int(row["B"]))
+                id_curr = int(row["InstanceID"])
+                self.rgbs_to_id[rgb_curr] = id_curr
+        # 
+        
         self.render()
 
         print ('KB controller set up.')
@@ -115,30 +131,60 @@ class KBController(object):
 
         event = self.envs.call_at(0, 'last_event')
         
-        # Mert collect dataset
+        # collect dataset
         color_frame = event.frame 
         depth_frame = event.depth_frame
         segmentation_frame = event.instance_segmentation_frame
         # print("fov: " + str(event.metadata["fov"])) 90deg
         # print("screen width: " + str(event.metadata["screenWidth"])) 300px
         # print("screen height: " + str(event.metadata["screenHeight"])) 300px
+        
+        pitch = event.metadata['agent']['rotation']['x']
+        yaw = event.metadata['agent']['rotation']['y']
+        roll = event.metadata['agent']['rotation']['z']
+        rotmax = R.from_euler('xyz', [pitch, yaw, roll])
+        rotmax = rotmax.as_matrix()
+        
+        transx = event.metadata['agent']['position']['x']
+        transy = event.metadata['agent']['position']['y']
+        transz = event.metadata['agent']['position']['z']
+        transmat = np.array([[transx], [transy], [transz]])
+        
+        transformat = np.hstack((rotmax, transmat))
+        transformat = np.vstack((transformat, [0, 0, 0, 1]))
+        
+        t = '{:06d}'.format(self.time)
+        np.savetxt(f"{args.save_path}/{t}_pose.txt", transformat, fmt="%.6f")
+        # with open(f"{args.save_path}/{self.time}pose.txt", 'w') as f:
+        #     for line in transformat:
+        #         f.write(str(line) + "\n")
+        
         color_to_id = event.color_to_object_id
         if (color_frame is not None):
             # print("there is color frame available")
             im = Image.fromarray(color_frame)
-            im.save(f"{args.save_path}/{self.time}color_frame.png")
+            im.save(f"{args.save_path}/{t}_color_frame.png")
         if (depth_frame is not None):
             # print("there is depth frame available")
             im = Image.fromarray(depth_frame)
-            im.save(f"{args.save_path}/{self.time}depth_frame.tiff")
+            im.save(f"{args.save_path}/{t}_depth_frame.tiff")
         if (segmentation_frame is not None):
             # print("there is segmentation frame available")
-            im = Image.fromarray(segmentation_frame)
-            im.save(f"{args.save_path}/{self.time}segmentation_frame.png")
-        if (color_to_id is not None):
-            list_of_dicsts = []
-            for key, value in color_to_id.items():
-                list_of_dicsts.append({"color": key, "id": value})
+            seg_height = segmentation_frame.shape[0]
+            seg_width = segmentation_frame.shape[1]
+            id_frame = np.zeros_like(segmentation_frame)
+            for j_idx in range(seg_width):
+              for i_idx in range(seg_height):
+                cur_rgb = [segmentation_frame[i_idx,j_idx, :]]  
+                cur_rgb_tuple = [tuple(e) for e in cur_rgb]
+                cur_id = self.rgbs_to_id[cur_rgb_tuple[0]]
+                id_frame[i_idx,j_idx, :] = [cur_id, cur_id, cur_id]
+            im = Image.fromarray(id_frame)
+            im.save(f"{args.save_path}/{t}_segmentation_frame.png")
+        # if (color_to_id is not None):
+        #     list_of_dicsts = []
+        #     for key, value in color_to_id.items():
+        #         list_of_dicsts.append({"color": key, "id": value})
             # print("there is color_to_id info available")
             # seg_height = segmentation_frame.shape[0]
             # seg_width = segmentation_frame.shape[1]
@@ -150,11 +196,15 @@ class KBController(object):
             #     print(cur_rgb_tuple[0])
             #     # id_frame[i_idx,j_idx, :] = color_to_id[cur_rgb_tuple[0]]
             #     print(color_to_id)             
-            with open('colors_ids.csv', 'w') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=["color", "id"])
-                writer.writeheader()
-                writer.writerows(list_of_dicsts)
-        # Mert collect dataset
+            # with open('colors_ids.csv', 'w') as csvfile:
+            #     writer = csv.DictWriter(csvfile, fieldnames=["color", "id"])
+            #     writer.writeheader()
+            #     writer.writerows(list_of_dicsts) 
+        
+        data = [self.time, 1000 * self.time]
+        self.writer.writerow(data)
+                  
+        # collect dataset
 
         frame = torch.from_numpy(np.array(event.frame)).float().permute(2, 0, 1)/255
         frame = F.interpolate(frame.unsqueeze(0), 300, mode='bilinear', align_corners=True)[0]
