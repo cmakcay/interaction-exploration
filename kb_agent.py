@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
+from math import degrees
 import sys
 import termios
 import tty
@@ -25,8 +26,8 @@ parser = argparse.ArgumentParser(description='RL')
 parser.add_argument('--env-name', default='ThorInteractionCount-v0')
 parser.add_argument('--markers', action='store_true')
 parser.add_argument('--x_display', default='0.0')
-parser.add_argument('--save_path', default='/home/iremkaftan/Desktop/kb_agent_dataset')
-parser.add_argument('--csv_path', default='/home/iremkaftan/Desktop/kb_agent_dataset/groundtruth_labels.csv')
+parser.add_argument('--save_path', default='/home/mert/Documents/kb_agent_dataset/run1')
+parser.add_argument('--csv_path', default='/home/mert/Documents/kb_agent_dataset/groundtruth_labels.csv')
 args = parser.parse_args()
 
 
@@ -139,10 +140,10 @@ class KBController(object):
         # print("screen width: " + str(event.metadata["screenWidth"])) 300px
         # print("screen height: " + str(event.metadata["screenHeight"])) 300px
         
-        pitch = event.metadata['agent']['rotation']['x']
+        pitch = event.metadata['agent']['cameraHorizon']
         yaw = event.metadata['agent']['rotation']['y']
         roll = event.metadata['agent']['rotation']['z']
-        rotmax = R.from_euler('xyz', [pitch, yaw, roll])
+        rotmax = R.from_euler('zyx', [roll, yaw, pitch], degrees=True)
         rotmax = rotmax.as_matrix()
         
         transx = event.metadata['agent']['position']['x']
@@ -163,11 +164,11 @@ class KBController(object):
         if (color_frame is not None):
             # print("there is color frame available")
             im = Image.fromarray(color_frame)
-            im.save(f"{args.save_path}/{t}_color_frame.png")
+            im.save(f"{args.save_path}/{t}_color.png")
         if (depth_frame is not None):
             # print("there is depth frame available")
             im = Image.fromarray(depth_frame)
-            im.save(f"{args.save_path}/{t}_depth_frame.tiff")
+            im.save(f"{args.save_path}/{t}_depth.tiff")
         if (segmentation_frame is not None):
             # print("there is segmentation frame available")
             seg_height = segmentation_frame.shape[0]
@@ -180,7 +181,7 @@ class KBController(object):
                 cur_id = self.rgbs_to_id[cur_rgb_tuple[0]]
                 id_frame[i_idx,j_idx, :] = [cur_id, cur_id, cur_id]
             im = Image.fromarray(id_frame)
-            im.save(f"{args.save_path}/{t}_segmentation_frame.png")
+            im.save(f"{args.save_path}/{t}_segmentation.png")
         # if (color_to_id is not None):
         #     list_of_dicsts = []
         #     for key, value in color_to_id.items():
@@ -201,7 +202,7 @@ class KBController(object):
             #     writer.writeheader()
             #     writer.writerows(list_of_dicsts) 
         
-        data = [self.time, 1000 * self.time]
+        data = [t, 1000 * self.time]
         self.writer.writerow(data)
                   
         # collect dataset
