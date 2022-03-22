@@ -140,20 +140,24 @@ class KBController(object):
         # print("screen width: " + str(event.metadata["screenWidth"])) 300px
         # print("screen height: " + str(event.metadata["screenHeight"])) 300px
         
-        pitch = event.metadata['agent']['cameraHorizon']
+        pitch= -event.metadata['agent']['cameraHorizon']        
         yaw = event.metadata['agent']['rotation']['y']
-        roll = event.metadata['agent']['rotation']['z']
-        rotmax = R.from_euler('zyx', [roll, yaw, pitch], degrees=True)
+        roll  = event.metadata['agent']['rotation']['z']
+        
+        rotmax = R.from_euler("YXZ",[yaw, pitch, roll], degrees=True)
         rotmax = rotmax.as_matrix()
+        
         
         transx = event.metadata['agent']['position']['x']
         transy = event.metadata['agent']['position']['y']
+        # transy = 0.25
         transz = event.metadata['agent']['position']['z']
         transmat = np.array([[transx], [transy], [transz]])
         
         transformat = np.hstack((rotmax, transmat))
         transformat = np.vstack((transformat, [0, 0, 0, 1]))
         
+
         t = '{:06d}'.format(self.time)
         np.savetxt(f"{args.save_path}/{t}_pose.txt", transformat, fmt="%.6f")
         # with open(f"{args.save_path}/{self.time}pose.txt", 'w') as f:
@@ -179,6 +183,8 @@ class KBController(object):
                 cur_rgb = [segmentation_frame[i_idx,j_idx, :]]  
                 cur_rgb_tuple = [tuple(e) for e in cur_rgb]
                 cur_id = self.rgbs_to_id[cur_rgb_tuple[0]]
+                if cur_rgb_tuple[0] == (0,0,255):
+                    print("!!!found one!!!")
                 id_frame[i_idx,j_idx, :] = [cur_id, cur_id, cur_id]
             im = Image.fromarray(id_frame)
             im.save(f"{args.save_path}/{t}_segmentation.png")
