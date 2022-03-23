@@ -66,7 +66,7 @@ class ROSHandle:
 
         self.color_pub = rospy.Publisher("~color_image", Image, queue_size=100)
         self.depth_pub = rospy.Publisher("~depth_image", Image, queue_size=100)
-        self.id_pub = rospy.Publisher("~id_image", Image, queue_size=100)
+        self.id_pub = rospy.Publisher("~segmentation_image", Image, queue_size=100)
         self.pose_pub = rospy.Publisher("~pose", PoseStamped, queue_size=100)
         self.tf_broadcaster = tf.TransformBroadcaster()
         
@@ -83,10 +83,10 @@ class ROSHandle:
         for row in range(4):
             for col in range(4):
                 transform[row, col] = pose_data[row * 4 + col]
-            rotation = tf.transformations.quaternion_from_matrix(transform)
-            self.tf_broadcaster.sendTransform(
-                (transform[0, 3], transform[1, 3], transform[2, 3]), rotation,
-                self.now, self.sensor_frame_name, self.global_frame_name)
+        rotation = tf.transformations.quaternion_from_matrix(transform)
+        self.tf_broadcaster.sendTransform(
+            (transform[0, 3], transform[1, 3], transform[2, 3]), rotation,
+            self.now, self.sensor_frame_name, self.global_frame_name)
         rotation = tf.transformations.quaternion_from_matrix(transform)
         self.tf_broadcaster.sendTransform(
             (transform[0, 3], transform[1, 3], transform[2, 3]), rotation,
