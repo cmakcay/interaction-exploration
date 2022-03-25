@@ -87,10 +87,6 @@ class ROSHandle:
         self.tf_broadcaster.sendTransform(
             (transform[0, 3], transform[1, 3], transform[2, 3]), rotation,
             self.now, self.sensor_frame_name, self.global_frame_name)
-        rotation = tf.transformations.quaternion_from_matrix(transform)
-        self.tf_broadcaster.sendTransform(
-            (transform[0, 3], transform[1, 3], transform[2, 3]), rotation,
-            self.now, self.sensor_frame_name, self.global_frame_name)
         pose_msg = PoseStamped()
         pose_msg.header.stamp = self.now
         pose_msg.header.frame_id = self.global_frame_name
@@ -212,7 +208,7 @@ class KBController(object):
 
         # pose of robot camera
         # rotation
-        pitch= -event.metadata['agent']['cameraHorizon']        
+        pitch = -event.metadata['agent']['cameraHorizon']        
         yaw = event.metadata['agent']['rotation']['y']
         roll  = event.metadata['agent']['rotation']['z']        
         rotmax = R.from_euler("YXZ",[yaw, pitch, roll], degrees=True)
@@ -224,7 +220,7 @@ class KBController(object):
         transz = event.metadata['agent']['position']['z']
         transmat = np.array([[transx], [transy], [transz]])
         
-        # rot + tran matrix
+        # rot + trans matrix
         transformat = np.hstack((rotmax, transmat))
         transformat = np.vstack((transformat, [0, 0, 0, 1]))
         self.nh.publish_pose(transformat)
@@ -240,11 +236,9 @@ class KBController(object):
             im_cv = im[:, :, ::-1].copy()
             self.nh.publish_color(im_cv)
 
-
         if (depth_frame is not None):
             im = PilImage.fromarray(depth_frame)
             self.nh.publish_depth(im)
-
 
         if (segmentation_frame is not None):
             
@@ -258,7 +252,6 @@ class KBController(object):
                 cur_rgb = [segmentation_frame[i_idx,j_idx, :]]  
                 cur_rgb_tuple = [tuple(e) for e in cur_rgb]
                 cur_id = self.rgbs_to_id[cur_rgb_tuple[0]]
-
                 id_frame[i_idx,j_idx, :] = [cur_id, cur_id, cur_id]
             im = (PilImage.fromarray(id_frame)).convert("RGB")
             im = np.array(im)
@@ -289,7 +282,6 @@ class KBController(object):
         grid = make_grid(viz_tensors, nrow=len(viz_tensors))
         util.show_wait(grid, T=1)
 
-    
 
     def step(self):
         for action in self.next_interact_command():
@@ -300,6 +292,7 @@ class KBController(object):
                 prompt += ['>> ']
                 action = input('\n'.join(prompt))
             yield action
+
 
     def run(self):
         for action in self.step():

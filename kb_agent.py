@@ -41,12 +41,14 @@ def get_term_character():
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
 
+
 def add_rectangle(tensor, bbox):
     img = transforms.ToPILImage()(tensor)
     draw = ImageDraw.Draw(img)
     draw.rectangle(bbox,  outline='blue', width=3)
     tensor = transforms.ToTensor()(img)
     return tensor
+
 
 class KBController(object):
 
@@ -89,7 +91,7 @@ class KBController(object):
         self.writer = csv.writer(self.timestamp)
         self.writer.writerow(['ImageID', 'TimeStamp'])
         
-        # Mert load csv
+        # load csv file to map from rgb to id
         self.rgbs_to_id = {}
         with open(args.csv_path) as csvfile:
             reader = csv.DictReader(csvfile)
@@ -127,7 +129,7 @@ class KBController(object):
                 if not match:
                     current_buffer = ''
 
-    # TODO: add action names, add more actions
+
     def render(self):
 
         event = self.envs.call_at(0, 'last_event')
@@ -142,29 +144,25 @@ class KBController(object):
         
         pitch= -event.metadata['agent']['cameraHorizon']        
         yaw = event.metadata['agent']['rotation']['y']
-        roll  = event.metadata['agent']['rotation']['z']
-        
+        roll = event.metadata['agent']['rotation']['z']      
         rotmax = R.from_euler("YXZ",[yaw, pitch, roll], degrees=True)
         rotmax = rotmax.as_matrix()
         
-        
         transx = event.metadata['agent']['position']['x']
         transy = event.metadata['agent']['position']['y']
-        # transy = 0.25
         transz = event.metadata['agent']['position']['z']
         transmat = np.array([[transx], [transy], [transz]])
         
         transformat = np.hstack((rotmax, transmat))
         transformat = np.vstack((transformat, [0, 0, 0, 1]))
         
-
         t = '{:06d}'.format(self.time)
         np.savetxt(f"{args.save_path}/{t}_pose.txt", transformat, fmt="%.6f")
         # with open(f"{args.save_path}/{self.time}pose.txt", 'w') as f:
         #     for line in transformat:
         #         f.write(str(line) + "\n")
         
-        color_to_id = event.color_to_object_id
+        # color_to_id = event.color_to_object_id
         if (color_frame is not None):
             # print("there is color frame available")
             im = Image.fromarray(color_frame)
@@ -237,7 +235,6 @@ class KBController(object):
         grid = make_grid(viz_tensors, nrow=len(viz_tensors))
         util.show_wait(grid, T=1)
 
-    
 
     def step(self):
         for action in self.next_interact_command():
@@ -248,6 +245,7 @@ class KBController(object):
                 prompt += ['>> ']
                 action = input('\n'.join(prompt))
             yield action
+
 
     def run(self):
         for action in self.step():
