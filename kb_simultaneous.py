@@ -128,6 +128,7 @@ class KBController(object):
             's': 'down',
             'a': 'tleft',
             'd': 'tright',
+            't': 'back',
             'e': 'interact',
         }
 
@@ -316,7 +317,8 @@ class KBController(object):
             outputs = self.envs.step([act_idx])
             self.observation, reward, done, info = [list(x)[0] for x in zip(*outputs)]
             print (f"A: {info['action']} | S: {info['success']} | R: {info['reward']}")
-
+            
+            self.envs.step([5])
 
             display = os.environ['DISPLAY']
             os.environ['DISPLAY'] = os.environ['LDISPLAY']

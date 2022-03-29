@@ -42,15 +42,16 @@ class ThorEnv(gym.Env):
             'down':self.look,
             'tright':self.turn,
             'tleft':self.turn,
+            'back':self.back,
         }
-        actions = ['forward', 'up', 'down', 'tright', 'tleft']
+        actions = ['forward', 'up', 'down', 'tright', 'tleft', 'back']
         return actions, action_fns
 
     def init_params(self):
         params = {
             'gridSize': 0.25,
-            'renderObjectImage': True,
             'renderDepthImage': True,
+            'renderInstanceSegmentation': True,
         }
         return params
 
@@ -106,6 +107,11 @@ class ThorEnv(gym.Env):
         act_params = dict(action='RotateLook', rotation=rotation, horizon=horizon)
 
         return {'params': act_params}
+    
+    def back(self, action):
+        act_params = dict(action='MoveHeldObjectBack', moveMagnitude=0.2, forceVisible=False)
+        
+        return {'params': act_params}
 
 
     def get_reward(self, observations):
@@ -129,7 +135,7 @@ class ThorEnv(gym.Env):
             x, y, z, rot, hor = self.agent_pose(self.state)
             if (x, y, z) not in self.reachable_positions:
                 gpos = min(self.reachable_positions, key=lambda p: (p[0]-x)**2 + (p[2]-z)**2)
-                self.controller.step(dict(action='TeleportFull', x=gpos[0], y=gpos[1], z=gpos[2], rotation=rot, horizon=hor))
+                self.controller.step(dict(action='TeleportFull', position=dict(x=gpos[0], y=gpos[1], z=gpos[2]), rotation=dict(x=0, y=rot, z=0), horizon=hor, standing=True))
 
         return action_info
 
@@ -160,7 +166,7 @@ class ThorEnv(gym.Env):
         self.controller.step(dict(action='GetReachablePositions'))
         self.reachable_positions = set([(pos['x'], pos['y'], pos['z']) for pos in self.state.metadata['reachablePositions']])
 
-        self.controller.step(dict(action='TeleportFull', x=0, y=0.9009991, z=2.25, rotation=180, horizon=0))
+        self.controller.step(dict(action='TeleportFull', position=dict(x=0, y=0.9009991, z=2.25), rotation=dict(x=0, y=180, z=0), horizon=0, standing=True))
         self.episode_id = 0
         return
 
@@ -191,7 +197,7 @@ class ThorEnv(gym.Env):
         init_rs = np.random.RandomState(self.episode_id)
         rot = init_rs.choice([i*self.rot_size_y for i in range(360//self.rot_size_y)])
         pos = reachable_positions[init_rs.randint(len(reachable_positions))]
-        self.controller.step(dict(action='TeleportFull', x=pos[0], y=pos[1], z=pos[2], rotation=rot, horizon=0))
+        self.controller.step(dict(action='TeleportFull', position=dict(x=pos[0], y=pos[1], z=pos[2]), rotation=dict(x=0, y=rot, z=0), horizon=0, standing=True))
         
         self.reachable_positions = set(reachable_positions)
 
