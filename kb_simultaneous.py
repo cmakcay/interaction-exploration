@@ -173,7 +173,7 @@ class KBController(object):
         self.render()
 
         print ('KB controller set up.')
-        print ('↑: move forward, look: wsad, action: e')
+        print ('↑: move forward, look: wsad, back: t, action: e')
 
 
     def next_interact_command(self):
@@ -318,7 +318,7 @@ class KBController(object):
             self.observation, reward, done, info = [list(x)[0] for x in zip(*outputs)]
             print (f"A: {info['action']} | S: {info['success']} | R: {info['reward']}")
             
-            self.envs.step([5])
+            # self.envs.step([5])
 
             display = os.environ['DISPLAY']
             os.environ['DISPLAY'] = os.environ['LDISPLAY']
