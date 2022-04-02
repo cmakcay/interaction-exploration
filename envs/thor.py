@@ -245,7 +245,7 @@ class ThorObjs(ThorEnv):
 
     def __init__(self, config):
         super().__init__(config)
-        self.movement_actions = ['forward', 'up', 'down', 'tright', 'tleft']
+        self.movement_actions = ['forward', 'up', 'down', 'tright', 'tleft', 'back']
         self.interactions = ['take', 'put', 'open', 'close', 'toggle-on', 'toggle-off', 'slice']
         self.interaction_set = set(self.interactions)
 
@@ -324,7 +324,7 @@ class ThorObjs(ThorEnv):
 
         act_params = None
         if target_obj['objectId'] is not None:
-            act_params = dict(action='PickupObject', objectId=target_obj['objectId'])
+            act_params = dict(action='PickupObject', objectId=target_obj['objectId'], forceAction=False, manualInteract=False)
 
         act_info = {'target':target_obj, 'params':act_params}
 
@@ -337,9 +337,9 @@ class ThorObjs(ThorEnv):
 
         act_params = None
         if target_obj['objectId'] is not None:
-            act_params = dict(action='PutObject', forceAction=True, objectId=self.inv_obj, receptacleObjectId=target_obj['objectId'])
+            act_params = dict(action='PutObject', objectId=target_obj['objectId'], forceAction=True, placeStationary=True)
 
-        act_info = {'held_obj':self.inv_obj, 'target':target_obj, 'params':act_params}
+        act_info = {'target':target_obj, 'params':act_params}
 
         return act_info
 
